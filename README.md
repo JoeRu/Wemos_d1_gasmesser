@@ -3,6 +3,8 @@
 This repository makes use of a QMC5883L Magnetic-Field Sensor rather then a reed-contact to detect changes in your gas consumption (Gasverbrauch).
 Basicly inspired was this by this Rasperry-Pi Project.
 
+I am using usualy PlatformIO but you can rename main.cpp to main.ino and this should work with #arduino as well.
+
 [Gaszähler auslesen mit Magnetometer HMC5883 und Raspberry Pi](https://www.kompf.de/tech/gascountmag.html)
 
 Required Material:
