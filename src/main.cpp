@@ -2,6 +2,8 @@
 #include <ESP8266WiFi.h>
 ///#include <ESP8266HTTPClient.h>
 #include <PubSubClient.h>
+#include <RunningAverage.h>
+
 
 // change your config-values here
 #include <myconfig.h>
@@ -9,12 +11,16 @@
 QMC5883LCompass compass;
 
 int a;
-int x, y, z;
+int x, y, z, counter;
 float b, last_b; // magnetic induction
 float min_b, max_b, diff_b;
 
+float auto_treshold; // experimental
+
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+RunningAverage RunningAverage_b(496);
 
 void setup()
 {
@@ -124,6 +130,13 @@ void sendmqtt()
   top = "";
   msg_out = "";
 
+  top = topic + "mean_b";
+  msg_out = String(RunningAverage_b.getAverage());
+  client.publish(top.c_str(), msg_out.c_str());
+  serial_out(top, msg_out);
+  top = "";
+  msg_out = "";
+
   client.disconnect();
 }
 
@@ -139,6 +152,7 @@ void loop()
   z = compass.getZ();
 
   b = sqrt((float)(x * x + y * y + z * z)); // calculate magnetic fiel value
+  RunningAverage_b.addValue(b); // floating average
 
   if (b < min_b)
   {
@@ -147,25 +161,32 @@ void loop()
   if (b > max_b)
   {
     max_b = b;
-/*     if (max_b != min_b)
+    if (max_b != min_b)
     {
-      max_diff = (max_b - min_b) * 2 / 3; // calculate treshold with maxima/minima 
-    } */
+      auto_treshold = (max_b - min_b) * 0.25; // calculate treshold with maxima/minima 
+    } 
   }
 
-  if (b > (last_b + max_diff))
+  if ((b > TL_TRESHOLD) && (last_b < TL_TRESHOLD)) //17000 - this resultet from tests. // experimental use TL_TRESHOLD = max_b - auto_treshold 
   {
     step = 0.01; // update + 1 step
     diff_b = b - last_b;
     last_b = b;
     sendmqtt();
+    step = 0;
   }
-  if (b < (last_b - max_diff))
+  if ((b < LL_TRESHOLD) && (last_b > LL_TRESHOLD)) //3000 // experimental use LL_TRESHOLD = min_b + auto_treshold 
   {
-    step = 0; // Lower send just for information of the switch-state
     diff_b = last_b - b;
     last_b = b;
     sendmqtt();
+  }
+  // send every minute a Ping / if you need to check for values more often - adapt the counter
+  counter++;
+  if(counter == 60)
+  {
+    sendmqtt();
+    counter = 0;
   }
   delay(1000);
 }

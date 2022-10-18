@@ -3,9 +3,8 @@
 
 // Difference the Magnet of the gas counter generates - you may need to adapt this to your needs
 // My tests showed a mag-field of usual 12000-14000 - which goes up to 22000-24000 and then lowers to 300-500 to switch back to 12000.
-// The maximum distance should aquire the needed "switch" of a number.
-float max_diff = 15500; // this is very sensitive  - a magnet in 1m distance results in changes..
-// you could try for auto-config - line 150-153 in main.cpp - but this tends to work after a while and is very speaky in the beginning
+const int TL_TRESHOLD = 17000;
+const int LL_TRESHOLD  = 3000;
 
 // Your Wifi SID
 const char *wifi_ssid = "yourwifi";
