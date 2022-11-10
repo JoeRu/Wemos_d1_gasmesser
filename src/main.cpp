@@ -1,12 +1,12 @@
 #include <QMC5883LCompass.h>
 #include <ESP8266WiFi.h>
+
 ///#include <ESP8266HTTPClient.h>
 #include <PubSubClient.h>
 #include <RunningAverage.h>
 
-
 // change your config-values here
-#include <myconfig.h>
+#include <myconfig.h> //copy example_config.h to myconfig...
 
 QMC5883LCompass compass;
 
@@ -55,7 +55,7 @@ void setup()
     Serial.print("Connected, IP address: ");
     Serial.println(WiFi.localIP());
   }
-  client.setServer(mqttserver, 1883);
+  client.setServer(mqttserver, port);
 
   min_b = 100000;
 }
@@ -75,7 +75,7 @@ void sendmqtt()
 {
   String top = topic + "magfield";
   String msg_out = String(b);
-  client.connect(deviceName);
+  client.connect(deviceName, username, password);
   client.publish(top.c_str(), msg_out.c_str());
   serial_out(top, msg_out);
   top = "";
@@ -152,7 +152,7 @@ void loop()
   z = compass.getZ();
 
   b = sqrt((float)(x * x + y * y + z * z)); // calculate magnetic fiel value
-  RunningAverage_b.addValue(b); // floating average
+  RunningAverage_b.addValue(b);             // floating average
 
   if (b < min_b)
   {
@@ -163,30 +163,37 @@ void loop()
     max_b = b;
     if (max_b != min_b)
     {
-      auto_treshold = (max_b - min_b) * 0.25; // calculate treshold with maxima/minima 
-    } 
+      auto_treshold = (max_b - min_b) * 0.75; // calculate treshold with maxima/minima
+    }
   }
 
-  if ((b > TL_TRESHOLD) && (last_b < TL_TRESHOLD)) //17000 - this resultet from tests. // experimental use TL_TRESHOLD = max_b - auto_treshold 
+  if ((b > TL_TRESHOLD) && (last_b < TL_TRESHOLD)) // 17000 - this resultet from tests. // experimental use TL_TRESHOLD = max_b - auto_treshold
   {
-    step = 0.01; // update + 1 step
+
     diff_b = b - last_b;
     last_b = b;
-    sendmqtt();
-    step = 0;
   }
-  if ((b < LL_TRESHOLD) && (last_b > LL_TRESHOLD)) //3000 // experimental use LL_TRESHOLD = min_b + auto_treshold 
+  if ((b < LL_TRESHOLD) && (last_b > ( LL_TRESHOLD + 500 ))) // 3000 // experimental use LL_TRESHOLD = min_b + auto_treshold
   {
+    step = step + 0.01; // update + 1 step
     diff_b = last_b - b;
     last_b = b;
-    sendmqtt();
+  }
+
+  if (counter == 0) // every minute 60.000 ms / 750 ms = 80 x
+  {
+    sendmqtt(); // send only once in a minute
+    step = 0;
   }
   // send every minute a Ping / if you need to check for values more often - adapt the counter
-  counter++;
-  if(counter == 60)
+  if (counter == _DELAY_COUNTER)
   {
-    sendmqtt();
     counter = 0;
   }
-  delay(1000);
+  else
+  {
+    counter++;
+  }
+  // if you miss to much values / the error goes up - you may need to have a shorter period to check on changes
+  delay(_DELAY);
 }

@@ -12,11 +12,15 @@ const char *wifi_ssid = "yourwifi";
 const char *wifi_password = "yourpassword";
 
 // your MQTT Server
-IPAddress mqttserver(192, 168, 176, 6);
+//IPAddress mqttserver(192, 168, 176, 6);
+const char *mqttserver = "dns-of-my-mqtt";
+const int port = 1883;
 
 float step = 0.01; // @todo: It looks like a smaller diff of 0.001 can be measured by smaller peaks.
 // your mqtt-topic
 String topic = "homeassistant/sensor/"; // will changed to mac-gas like so: homeassistant/sensor/AC0BFBD9F5A0-gas/ - if you want it fixed comment the lines in setup() function
 
 const char *deviceName = "gas-sensor-1";
-// Change END
+
+const char *username = "";
+const char *password = "";
